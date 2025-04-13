@@ -38,8 +38,20 @@ jobs:
         lunch flare_stone-userdebug
         mka bacon -j$(nproc --all)
 
+    - name: Find ROM file path
+      id: find_rom
+      run: |
+        ROM_PATH=$(find flare/out/target/product/stone -name "*.zip" -type f | head -1)
+        if [ -z "$ROM_PATH" ]; then
+          echo "::error::No ROM zip file found"
+          exit 1
+        fi
+        echo "rom_path=$ROM_PATH" >> $GITHUB_OUTPUT
+        echo "Found ROM at: $ROM_PATH"
+
     - name: Upload ROM Output
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: flare-rom
-        path: flare/out/target/product/stone/*.zip
+        path: ${{ steps.find_rom.outputs.rom_path }}
+        if-no-files-found: error
