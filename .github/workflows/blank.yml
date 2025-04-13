@@ -1,0 +1,45 @@
+name: Build Project Flare
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Setup Git Identity
+      run: |
+        git config --global user.name "apxcodefun"
+        git config --global user.email "dwin7609@gmail.com"
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y repo git curl zip unzip openjdk-11-jdk python3
+
+    - name: Initialize Repo
+      run: |
+        mkdir flare && cd flare
+        repo init -u https://github.com/Project-Flare/manifest -b 15 --git-lfs
+        repo sync -c -j$(nproc --all) --force-sync --no-clone-bundle --no-tags
+
+    - name: Clone Device Sources
+      run: |
+        cd flare
+        git clone https://github.com/kamikaonashi/device_xiaomi_stone_new -b 15 device/xiaomi/stone
+        git clone https://github.com/kamikaonashi/vendor_xiaomi_stone_new -b 15 vendor/xiaomi/stone
+        git clone https://github.com/kamikaonashi/kernel_xiaomi_stone_new -b 15 kernel/xiaomi/stone
+
+    - name: Lunch & Build
+      run: |
+        cd flare
+        . build/envsetup.sh
+        lunch flare_stone-userdebug
+        mka bacon -j$(nproc --all)
+
+    - name: Upload ROM Output
+      uses: actions/upload-artifact@v3
+      with:
+        name: flare-rom
+        path: flare/out/target/product/stone/*.zip
